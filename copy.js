@@ -1,11 +1,12 @@
 'use strict';
 
+var findOrCreateCache = require("./helpers/find_or_create_cache.js");
+
 function passThrough(obj, mem, level) {
     return obj;
 }
 
 function iterate(orig, mem, level) {
-    level = level || 0;
     var dup = new orig.constructor();
     for (var key in orig) {
         var val = orig[key];
@@ -14,44 +15,13 @@ function iterate(orig, mem, level) {
     return dup;
 }
 
-const types = Object.freeze({
+var types = Object.freeze({
     'string':    passThrough,
     'number':    passThrough,
     'boolean':   passThrough,
     'undefined': passThrough,
     'object':    iterate
 });
-
-function findOrCreateCache(obj, mem, level) {
-    var k, i, tmpPair, pair, bucket, parsingErr;
-
-    try {
-        k = JSON.stringify(obj);
-    } catch(e) {
-        parsingErr = e;
-    }
-
-    if (k) {
-        bucket = mem.cache[k] = (mem.cache[k] || []);
-    } else {
-        bucket = mem.err;
-    }
-
-    for (i in bucket) {
-        tmpPair = bucket[i];
-        if (obj === tmpPair.orig) {
-            pair = tmpPair;
-            break;
-        }
-    }
-
-    if (pair === undefined) {
-        pair = {orig: obj};
-        bucket.push(pair);
-    }
-
-    return pair;
-}
 
 function deepCopy(obj, mem, level) {
     var pair, func;

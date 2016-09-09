@@ -1,18 +1,20 @@
 'use strict';
 
-function passThrough(obj) {
+var findOrCreateCache = require("./helpers/find_or_create_cache.js");
+
+function passThrough(obj, mem, level) {
     return obj;
 }
 
-function iterate(orig, level) {
+function iterate(orig, mem, level) {
     for (var key in orig) {
         var val = orig[key];
-        orig[key] = deepFreeze(val, level+1);
+        orig[key] = deepFreeze(val, mem, level+1);
     }
     return Object.freeze(orig);
 }
 
-const types = Object.freeze({
+var types = Object.freeze({
     'string':    passThrough,
     'number':    passThrough,
     'boolean':   passThrough,
@@ -20,17 +22,25 @@ const types = Object.freeze({
     'object':    iterate
 });
 
-function deepFreeze(obj, level) {
-    if (!obj)
-        return obj;
-    if (level >= 100)
-        throw new Error("max recursion level reached.");
+function deepFreeze(obj, mem, level) {
+    var pair, func;
+    if (!obj) { return obj; }
 
-    var func = types[typeof(obj)];
+    level = level || 0;
+    mem = mem || {err: [], cache: {}};
+    pair = findOrCreateCache(obj, mem, level);
+
+    if (pair.frozen) {
+        return pair.frozen;
+    }
+
+    func = types[typeof(obj)];
     if (func === undefined)
         throw new Error("Unknown type: " + typeof(obj));
-    else
-        return func(obj, (level || 0) + 1);
+    else {
+        pair.frozen = func(obj, mem, level + 1);
+        return pair.frozen;
+    }
 }
 
 module.exports = deepFreeze;

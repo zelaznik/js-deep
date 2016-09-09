@@ -1,3 +1,5 @@
+'use strict';
+
 function deepEqual(x, y, level) {
     if(x === y) {
         return true;
